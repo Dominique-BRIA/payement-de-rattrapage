@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PayRattrapage — Paiement Étudiant</title>
+  <link rel="stylesheet" href="css/stylePaiement.css">
+  <style>
+    .total-bar {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: white;
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+    .total-bar .amount { font-size: 1.8rem; font-weight: 800; font-family: 'Fraunces', serif; }
+    .success-screen {
+      text-align: center;
+      padding: 3rem 2rem;
+    }
+    .success-icon { font-size: 5rem; margin-bottom: 1rem; animation: bounce 0.5s ease; }
+    @keyframes bounce { 0%,100%{transform:scale(1)} 50%{transform:scale(1.2)} }
+    .success-screen h2 { font-family: 'Fraunces', serif; font-size: 1.75rem; color: var(--success); margin-bottom: 0.5rem; }
+    .phone-input-group { display: flex; gap: 8px; align-items: center; }
+    .phone-prefix { background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
+  </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<nav class="topbar">
+  <div class="topbar-brand">
+    <span class="dot">●</span>
+    <span>PayRattrapage</span>
+  </div>
+  <div class="topbar-nav">
+    <a href="paiement.html" class="active">💳 Paiement</a>
+    <a href="#" onclick="voirHistorique()">📋 Historique</a>
+  </div>
+  <div class="topbar-user">
+    <div class="avatar" id="userAvatar">?</div>
+    <span id="userName"></span>
+    <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">Déconnexion</button>
+  </div>
+</nav>
+
+<div class="main-layout">
+  <div class="page-content" style="max-width:800px;margin:0 auto">
+
+    <!-- Étape wizard -->
+    <div class="steps-bar" id="stepsBar">
+      <div class="step active" id="step1">
+        <div class="step-circle">1</div>
+        <span class="step-label">Matières</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" id="step2">
+        <div class="step-circle">2</div>
+        <span class="step-label">Paiement</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" id="step3">
+        <div class="step-circle">3</div>
+        <span class="step-label">Confirmation</span>
+      </div>
+    </div>
+
+    <!-- ── ÉTAPE 1 : Choix des matières ── -->
+    <div id="pageStep1">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Choisir vos matières</h1>
+          <p class="page-subtitle" id="etudiantInfo">Chargement...</p>
+        </div>
+      </div>
+
+      <div id="alertStep1"></div>
+
+      <!-- Barre totale -->
+      <div class="total-bar">
+        <div>
+          <div style="font-size:.8rem;opacity:.75;text-transform:uppercase;letter-spacing:.5px">Total à payer</div>
+          <div class="amount" id="totalAmount">0 FCFA</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:.8rem;opacity:.75">Matières sélectionnées</div>
+          <div style="font-size:1.5rem;font-weight:800" id="countSelected">0</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📚 Matières disponibles</span>
+          <span style="font-size:.8rem;color:var(--text-muted)">Cochez les matières à rattraper</span>
+        </div>
+        <div id="matieresContainer">
+          <div style="text-align:center;padding:2rem;color:var(--text-muted)">⏳ Chargement des matières...</div>
+        </div>
+        <div style="margin-top:1.5rem;display:flex;justify-content:flex-end">
+          <button class="btn btn-primary btn-lg" onclick="goStep2()" id="btnStep1Next" disabled>
+            Continuer → Choisir le paiement
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ÉTAPE 2 : Mode de paiement ── -->
+    <div id="pageStep2" style="display:none">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Mode de paiement</h1>
+          <p class="page-subtitle">Choisissez comment payer vos frais de rattrapage</p>
+        </div>
+        <button class="btn btn-ghost" onclick="goStep1()">← Retour</button>
+      </div>
+
+      <div id="alertStep2"></div>
+
+      <!-- Récap matières -->
+      <div class="card" style="margin-bottom:1rem">
+        <div class="card-header">
+          <span class="card-title">📋 Récapitulatif</span>
+          <span style="font-size:.9rem;font-weight:700;color:var(--accent)" id="recapTotal"></span>
+        </div>
+        <div id="recapMatieres"></div>
+      </div>
+
+      <!-- Méthodes de paiement -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">💳 Choisir le moyen de paiement</span>
+        </div>
+
+        <div class="pay-methods">
+          <div class="pay-method-card" onclick="selectMode('orange_money')" id="pm-orange_money">
+            <div class="pm-icon">🟠</div>
+            <div class="pm-name">Orange Money</div>
+            <div class="pm-sub">Paiement mobile sécurisé</div>
+          </div>
+          <div class="pay-method-card" onclick="selectMode('mtn_money')" id="pm-mtn_money">
+            <div class="pm-icon">🟡</div>
+            <div class="pm-name">MTN MoMo</div>
+            <div class="pm-sub">Mobile Money MTN</div>
+          </div>
+        </div>
+
+        <!-- Champ téléphone Mobile Money -->
+        <div id="phoneField" style="display:none;margin-top:1rem">
+          <div class="form-group">
+            <label class="form-label">Numéro <span id="operatorLabel"></span></label>
+            <div class="phone-input-group">
+              <span class="phone-prefix">🇨🇲 +237</span>
+              <input type="tel" id="numeroMobile" class="form-control" placeholder="6XX XXX XXX" maxlength="9">
+            </div>
+            <small style="color:var(--text-muted);font-size:.78rem;margin-top:4px;display:block">
+              Vous recevrez une demande de confirmation sur ce numéro
+            </small>
+          </div>
+        </div>
+
+        <div style="margin-top:1.5rem;display:flex;justify-content:flex-end">
+          <button class="btn btn-accent btn-lg" onclick="initierPaiement()" id="btnPayer" disabled>
+            💳 Payer maintenant
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ÉTAPE 3 : Confirmation ── -->
+    <div id="pageStep3" style="display:none">
+      <div class="card">
+        <div class="success-screen">
+          <div class="success-icon">✅</div>
+          <h2>Paiement réussi !</h2>
+          <p style="color:var(--text-muted);margin-bottom:2rem">Votre paiement a été confirmé avec succès</p>
+
+          <div style="background:var(--bg);border-radius:var(--radius);padding:1.5rem;text-align:left;margin-bottom:2rem">
+            <div class="recu-row"><span>Référence :</span><strong id="confRef"></strong></div>
+            <div class="recu-row"><span>N° Reçu :</span><strong id="confRecu"></strong></div>
+            <div class="recu-row"><span>Montant :</span><strong id="confMontant" style="color:var(--accent)"></strong></div>
+            <div class="recu-row"><span>Mode :</span><strong id="confMode"></strong></div>
+            <div class="recu-row"><span>Transaction :</span><span id="confTxn" style="font-size:.8rem"></span></div>
+          </div>
+
+          <div style="display:flex;gap:12px;justify-content:center">
+            <button class="btn btn-primary btn-lg" onclick="telechargerRecu()">📄 Télécharger le reçu PDF</button>
+            <button class="btn btn-ghost btn-lg" onclick="nouveauPaiement()">↩ Nouveau paiement</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Historique (modal inline) -->
+    <div id="histSection" style="display:none;margin-top:1.5rem">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📋 Historique de vos paiements</span>
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('histSection').style.display='none'">✕ Fermer</button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th><th>Référence</th><th>Matières</th><th>Montant</th><th>Mode</th><th>Statut</th><th>Reçu</th>
+              </tr>
+            </thead>
+            <tbody id="histBody">
+              <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+  if (!Auth.requireAuth(['etudiant'])) {}
+
+  let selectedMatieres = [];
+  let selectedMode = null;
+  let lastPaiement = null;
+  const etudiant = Auth.getUser();
+
+  // ── Init ────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    initTopbarUser();
+    if (etudiant) {
+      document.getElementById('etudiantInfo').textContent =
+        `${etudiant.prenom} ${etudiant.nom} — ${etudiant.matricule} | ${etudiant.filiere?.nom || ''}`;
+    }
+    chargerMatieres();
+  });
+
+  async function chargerMatieres() {
+    try {
+      const filiereId = etudiant?.filiere?.id;
+      const url = filiereId ? `/matieres?filiere_id=${filiereId}` : '/matieres';
+      const data = await api.get(url);
+      renderMatieres(data.data);
+    } catch (err) {
+      document.getElementById('matieresContainer').innerHTML =
+        `<div class="alert alert-danger">Impossible de charger les matières: ${err.message}</div>`;
+    }
+  }
+
+  function renderMatieres(matieres) {
+    if (!matieres.length) {
+      document.getElementById('matieresContainer').innerHTML =
+        '<div class="alert alert-info">Aucune matière disponible pour votre filière.</div>';
+      return;
+    }
+    const html = `<div class="matiere-grid">${matieres.map(m => `
+      <div class="matiere-item" id="mi-${m.id}" onclick="toggleMatiere(${m.id}, ${m.frais}, '${m.libelle}')">
+        <input type="checkbox" id="cb-${m.id}">
+        <div class="matiere-info">
+          <div class="matiere-name">${m.libelle}</div>
+          <div class="matiere-frais">${formatFCFA(m.frais)}</div>
+          <div style="font-size:.72rem;color:var(--text-muted)">${m.code} — ${m.semestre}</div>
+        </div>
+      </div>`).join('')}</div>`;
+    document.getElementById('matieresContainer').innerHTML = html;
+  }
+
+  function toggleMatiere(id, frais, libelle) {
+    const idx = selectedMatieres.findIndex(m => m.id === id);
+    if (idx === -1) {
+      selectedMatieres.push({ id, frais: parseFloat(frais), libelle });
+      document.getElementById(`mi-${id}`)?.classList.add('selected');
+      document.getElementById(`cb-${id}`).checked = true;
+    } else {
+      selectedMatieres.splice(idx, 1);
+      document.getElementById(`mi-${id}`)?.classList.remove('selected');
+      document.getElementById(`cb-${id}`).checked = false;
+    }
+    const total = selectedMatieres.reduce((s, m) => s + m.frais, 0);
+    document.getElementById('totalAmount').textContent = formatFCFA(total);
+    document.getElementById('countSelected').textContent = selectedMatieres.length;
+    document.getElementById('btnStep1Next').disabled = selectedMatieres.length === 0;
+  }
+
+  // ── Step navigation ─────────────────────────
+  function goStep1() {
+    document.getElementById('pageStep1').style.display = '';
+    document.getElementById('pageStep2').style.display = 'none';
+    document.getElementById('step1').classList.add('active');
+    document.getElementById('step2').classList.remove('active', 'done');
+  }
+
+  function goStep2() {
+    if (!selectedMatieres.length) return;
+    document.getElementById('pageStep1').style.display = 'none';
+    document.getElementById('pageStep2').style.display = '';
+    document.getElementById('step1').classList.remove('active');
+    document.getElementById('step1').classList.add('done');
+    document.getElementById('step2').classList.add('active');
+
+    // Recap
+    const total = selectedMatieres.reduce((s, m) => s + m.frais, 0);
+    document.getElementById('recapTotal').textContent = formatFCFA(total);
+    document.getElementById('recapMatieres').innerHTML = selectedMatieres.map(m =>
+      `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:.875rem">
+        <span>${m.libelle}</span><strong>${formatFCFA(m.frais)}</strong>
+       </div>`
+    ).join('');
+  }
+
+  function selectMode(mode) {
+    selectedMode = mode;
+    document.querySelectorAll('.pay-method-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById(`pm-${mode}`)?.classList.add('selected');
+    document.getElementById('phoneField').style.display = '';
+    document.getElementById('operatorLabel').textContent = mode === 'orange_money' ? 'Orange Money' : 'MTN MoMo';
+    document.getElementById('btnPayer').disabled = false;
+  }
+
+  async function initierPaiement() {
+    const numero = document.getElementById('numeroMobile').value.trim();
+    if (!numero || numero.length < 9) {
+      document.getElementById('alertStep2').innerHTML = '<div class="alert alert-danger">⚠️ Veuillez entrer un numéro valide (9 chiffres).</div>';
+      return;
+    }
+
+    document.getElementById('alertStep2').innerHTML = '';
+    showLoading(`Traitement du paiement ${selectedMode === 'orange_money' ? 'Orange Money' : 'MTN MoMo'}...`);
+
+    try {
+      const data = await api.post('/paiements/mobile', {
+        etudiant_id: etudiant.id,
+        matieres_ids: selectedMatieres.map(m => m.id),
+        mode_paiement: selectedMode,
+        numero_mobile: '237' + numero
+      });
+
+      lastPaiement = data.data;
+      hideLoading();
+      showStep3(data.data);
+    } catch (err) {
+      hideLoading();
+      document.getElementById('alertStep2').innerHTML = `<div class="alert alert-danger">❌ ${err.message}</div>`;
+    }
+  }
+
+  function showStep3(data) {
+    document.getElementById('pageStep2').style.display = 'none';
+    document.getElementById('pageStep3').style.display = '';
+    document.getElementById('step2').classList.remove('active');
+    document.getElementById('step2').classList.add('done');
+    document.getElementById('step3').classList.add('done');
+
+    document.getElementById('confRef').textContent = data.reference;
+    document.getElementById('confRecu').textContent = data.numero_recu;
+    document.getElementById('confMontant').textContent = formatFCFA(data.montant_total);
+    document.getElementById('confMode').textContent = modePaiement(selectedMode);
+    document.getElementById('confTxn').textContent = data.transaction_id || 'N/A';
+  }
+
+  function telechargerRecu() {
+    if (lastPaiement?.numero_recu) {
+      window.open(`/api/recus/${lastPaiement.numero_recu}/pdf`, '_blank');
+    }
+  }
+
+  function nouveauPaiement() {
+    selectedMatieres = [];
+    selectedMode = null;
+    lastPaiement = null;
+    document.querySelectorAll('.matiere-item').forEach(el => el.classList.remove('selected'));
+    document.querySelectorAll('.matiere-item input').forEach(cb => cb.checked = false);
+    document.getElementById('totalAmount').textContent = '0 FCFA';
+    document.getElementById('countSelected').textContent = '0';
+    document.getElementById('btnStep1Next').disabled = true;
+    document.getElementById('pageStep3').style.display = 'none';
+    document.getElementById('pageStep1').style.display = '';
+    ['step1','step2','step3'].forEach(s => {
+      document.getElementById(s).classList.remove('active','done');
+    });
+    document.getElementById('step1').classList.add('active');
+  }
+
+  async function voirHistorique() {
+    const sect = document.getElementById('histSection');
+    sect.style.display = '';
+    try {
+      const data = await api.get(`/paiements/etudiant/${etudiant.id}`);
+      if (!data.data.length) {
+        document.getElementById('histBody').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">Aucun paiement trouvé.</td></tr>';
+        return;
+      }
+      document.getElementById('histBody').innerHTML = data.data.map(p => `
+        <tr>
+          <td>${formatDate(p.created_at)}</td>
+          <td><code style="font-size:.78rem">${p.reference}</code></td>
+          <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.matieres || '—'}</td>
+          <td><strong>${formatFCFA(p.montant_total)}</strong></td>
+          <td>${modePaiement(p.mode_paiement)}</td>
+          <td>${badgeStatut(p.statut)}</td>
+          <td>${p.numero_recu ? `<a href="/api/recus/${p.numero_recu}/pdf" target="_blank" class="btn btn-ghost btn-sm">📄 PDF</a>` : '—'}</td>
+        </tr>`).join('');
+    } catch (err) {
+      document.getElementById('histBody').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--danger)">${err.message}</td></tr>`;
+    }
+    sect.scrollIntoView({ behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
