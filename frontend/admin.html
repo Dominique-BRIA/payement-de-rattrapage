@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PayRattrapage — Administration</title>
+  <link rel="stylesheet" href="css/styleAdmin.css">
+  <style>
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000;
+    }
+    .modal {
+      background: white;
+      border-radius: var(--radius);
+      padding: 2rem;
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .modal-title { font-family: 'Fraunces', serif; font-size: 1.2rem; font-weight: 700; color: var(--primary); }
+  </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<nav class="topbar">
+  <div class="topbar-brand">
+    <span class="dot">●</span>
+    <span>PayRattrapage — Admin</span>
+  </div>
+  <div class="topbar-nav">
+    <a href="agent.html">👔 Espace Agent</a>
+  </div>
+  <div class="topbar-user">
+    <div class="avatar" id="userAvatar">?</div>
+    <span id="userName"></span>
+    <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">Déconnexion</button>
+  </div>
+</nav>
+
+<div class="main-layout">
+
+  <!-- Sidebar Admin -->
+  <aside class="sidebar">
+    <div class="sidebar-section">Administration</div>
+    <a href="#" class="sidebar-item active" id="nav-dashboard" onclick="showSection('dashboard')"><span class="icon">📊</span> Dashboard</a>
+    <div class="sidebar-section">Gestion</div>
+    <a href="#" class="sidebar-item" id="nav-filieres" onclick="showSection('filieres')"><span class="icon">🏫</span> Filières</a>
+    <a href="#" class="sidebar-item" id="nav-matieres" onclick="showSection('matieres')"><span class="icon">📚</span> Matières</a>
+    <a href="#" class="sidebar-item" id="nav-etudiants" onclick="showSection('etudiants')"><span class="icon">🎓</span> Étudiants</a>
+    <div class="sidebar-section">Finances</div>
+    <a href="#" class="sidebar-item" id="nav-paiements" onclick="showSection('paiements')"><span class="icon">💳</span> Paiements</a>
+  </aside>
+
+  <div class="page-content">
+
+    <!-- ══════ DASHBOARD ══════ -->
+    <div id="secDashboard">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Tableau de bord</h1>
+          <p class="page-subtitle">Vue d'ensemble du système de paiement</p>
+        </div>
+        <button class="btn btn-ghost" onclick="chargerDashboard()">↻ Actualiser</button>
+      </div>
+      <div class="stats-grid" id="dashStats">
+        <div style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement...</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1.5rem">
+        <div class="card">
+          <div class="card-header"><span class="card-title">📈 Encaissements 7 jours</span></div>
+          <div id="chart7j">Chargement...</div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">💳 Répartition par mode</span></div>
+          <div id="chartModes">Chargement...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ FILIÈRES ══════ -->
+    <div id="secFilieres" style="display:none">
+      <div class="page-header">
+        <div><h1 class="page-title">Filières</h1><p class="page-subtitle">Gérer les filières de l'établissement</p></div>
+        <button class="btn btn-primary" onclick="openModalFiliere()">+ Nouvelle filière</button>
+      </div>
+      <div id="alertFilieres"></div>
+      <div class="card">
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Code</th><th>Nom</th><th>Niveau</th><th>Actions</th></tr></thead>
+            <tbody id="tblFilieres"><tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ MATIÈRES ══════ -->
+    <div id="secMatieres" style="display:none">
+      <div class="page-header">
+        <div><h1 class="page-title">Matières</h1><p class="page-subtitle">Gérer les matières de rattrapage</p></div>
+        <button class="btn btn-primary" onclick="openModalMatiere()">+ Nouvelle matière</button>
+      </div>
+      <div id="alertMatieres"></div>
+      <div class="card">
+        <div style="margin-bottom:1rem;display:flex;gap:8px">
+          <select class="form-control" id="filtreFiliereM" onchange="chargerMatieres()" style="width:auto">
+            <option value="">Toutes les filières</option>
+          </select>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Code</th><th>Libellé</th><th>Crédits</th><th>Frais</th><th>Filière</th><th>Semestre</th><th>Statut</th><th>Actions</th></tr></thead>
+            <tbody id="tblMatieres"><tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ ÉTUDIANTS ══════ -->
+    <div id="secEtudiants" style="display:none">
+      <div class="page-header">
+        <div><h1 class="page-title">Étudiants</h1><p class="page-subtitle">Gérer les étudiants inscrits</p></div>
+        <button class="btn btn-primary" onclick="openModalEtudiant()">+ Nouvel étudiant</button>
+      </div>
+      <div id="alertEtudiants"></div>
+      <div class="card">
+        <div style="margin-bottom:1rem">
+          <input type="text" class="form-control" placeholder="Rechercher par nom, prénom ou matricule..." id="searchEtud" oninput="chargerEtudiants()" style="max-width:360px">
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Matricule</th><th>Nom</th><th>Prénom</th><th>Filière</th><th>Niveau</th><th>Téléphone</th><th>Actions</th></tr></thead>
+            <tbody id="tblEtudiants"><tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ PAIEMENTS ══════ -->
+    <div id="secPaiements" style="display:none">
+      <div class="page-header">
+        <div><h1 class="page-title">Paiements</h1><p class="page-subtitle">Tous les paiements enregistrés</p></div>
+      </div>
+      <div class="card">
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Date</th><th>Référence</th><th>Étudiant</th><th>Montant</th><th>Mode</th><th>Statut</th><th>Reçu</th></tr></thead>
+            <tbody id="tblPaiements"><tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Modals ── -->
+<div class="modal-overlay" id="modalOverlay" style="display:none" onclick="closeModal(event)">
+  <div class="modal" id="modalContent">
+    <!-- Rempli dynamiquement -->
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+  if (!Auth.requireAuth(['admin'])) {}
+
+  let filieresList = [];
+
+  document.addEventListener('DOMContentLoaded', () => {
+    initTopbarUser();
+    chargerDashboard();
+  });
+
+  // ── Navigation ────────────────────────────────
+  function showSection(sec) {
+    ['Dashboard','Filieres','Matieres','Etudiants','Paiements'].forEach(s => {
+      document.getElementById(`sec${s}`).style.display = 'none';
+      document.getElementById(`nav-${s.toLowerCase()}`)?.classList.remove('active');
+    });
+    document.getElementById(`sec${sec.charAt(0).toUpperCase()+sec.slice(1)}`).style.display = '';
+    document.getElementById(`nav-${sec}`)?.classList.add('active');
+
+    if (sec === 'filieres') chargerFilieres();
+    else if (sec === 'matieres') { chargerFilieresList().then(chargerMatieres); }
+    else if (sec === 'etudiants') chargerEtudiants();
+    else if (sec === 'paiements') chargerPaiements();
+  }
+
+  // ── Dashboard ─────────────────────────────────
+  async function chargerDashboard() {
+    try {
+      const data = await api.get('/paiements/stats');
+      const t = data.data.totaux;
+      document.getElementById('dashStats').innerHTML = `
+        <div class="stat-card"><div class="stat-label">Total encaissé</div><div class="stat-value">${new Intl.NumberFormat('fr-FR').format(t.montant_total_valide||0)}</div><div class="stat-sub">FCFA</div></div>
+        <div class="stat-card accent"><div class="stat-label">Cash</div><div class="stat-value">${new Intl.NumberFormat('fr-FR').format(t.montant_cash||0)}</div><div class="stat-sub">FCFA espèces</div></div>
+        <div class="stat-card"><div class="stat-label">Orange Money</div><div class="stat-value">${new Intl.NumberFormat('fr-FR').format(t.montant_orange||0)}</div><div class="stat-sub">FCFA</div></div>
+        <div class="stat-card success"><div class="stat-label">MTN MoMo</div><div class="stat-value">${new Intl.NumberFormat('fr-FR').format(t.montant_mtn||0)}</div><div class="stat-sub">FCFA</div></div>
+        <div class="stat-card"><div class="stat-label">Étudiants</div><div class="stat-value">${t.nb_etudiants||0}</div><div class="stat-sub">ayant payé</div></div>
+        <div class="stat-card"><div class="stat-label">Transactions</div><div class="stat-value">${t.total_paiements||0}</div><div class="stat-sub">validées</div></div>`;
+
+      // Chart 7 jours (simple bars)
+      const jours = data.data.parJour || [];
+      document.getElementById('chart7j').innerHTML = jours.length ? jours.map(j => {
+        const max = Math.max(...jours.map(x => x.total));
+        const pct = max ? (j.total / max * 100) : 0;
+        return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:.8rem">
+          <span style="width:70px;color:var(--text-muted)">${j.jour.split('-').slice(1).join('/')}</span>
+          <div style="flex:1;background:var(--bg);border-radius:4px;height:20px;overflow:hidden">
+            <div style="width:${pct}%;height:100%;background:var(--primary);border-radius:4px;transition:width .5s"></div>
+          </div>
+          <span style="width:80px;text-align:right;font-weight:600">${new Intl.NumberFormat('fr-FR').format(j.total)}</span>
+        </div>`;
+      }).join('') : '<p style="color:var(--text-muted);font-size:.85rem;text-align:center;padding:1rem">Aucune donnée disponible</p>';
+
+      // Répartition modes
+      const total = (t.montant_total_valide || 0);
+      if (total > 0) {
+        const modes = [
+          { label: '💵 Cash', val: t.montant_cash||0, color: 'var(--accent)' },
+          { label: '🟠 Orange', val: t.montant_orange||0, color: 'var(--orange-money)' },
+          { label: '🟡 MTN', val: t.montant_mtn||0, color: 'var(--mtn-money)' },
+        ];
+        document.getElementById('chartModes').innerHTML = modes.map(m => `
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <span style="width:80px;font-size:.82rem">${m.label}</span>
+            <div style="flex:1;background:var(--bg);border-radius:100px;height:16px;overflow:hidden">
+              <div style="width:${(m.val/total*100).toFixed(1)}%;height:100%;background:${m.color};border-radius:100px"></div>
+            </div>
+            <span style="font-size:.78rem;font-weight:700;width:60px;text-align:right">${(m.val/total*100).toFixed(0)}%</span>
+          </div>`).join('');
+      } else {
+        document.getElementById('chartModes').innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;text-align:center;padding:1rem">Aucune donnée</p>';
+      }
+    } catch(e) {
+      showToast('Erreur chargement dashboard: ' + e.message, 'error');
+    }
+  }
+
+  // ── Filières ─────────────────────────────────
+  async function chargerFilieres() {
+    try {
+      const data = await api.get('/filieres');
+      filieresList = data.data;
+      document.getElementById('tblFilieres').innerHTML = data.data.map(f => `
+        <tr>
+          <td><code>${f.code}</code></td><td><strong>${f.nom}</strong></td><td>${f.niveau}</td>
+          <td>
+            <button class="btn btn-ghost btn-sm" onclick="openModalFiliere(${JSON.stringify(JSON.stringify(f))})">✏️</button>
+            <button class="btn btn-ghost btn-sm" onclick="supprimerFiliere(${f.id},'${f.nom}')">🗑️</button>
+          </td>
+        </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-muted)">Aucune filière</td></tr>';
+    } catch(e) { showToast(e.message, 'error'); }
+  }
+
+  async function chargerFilieresList() {
+    try {
+      const data = await api.get('/filieres');
+      filieresList = data.data;
+      const sel = document.getElementById('filtreFiliereM');
+      if (sel) {
+        sel.innerHTML = '<option value="">Toutes les filières</option>' +
+          data.data.map(f => `<option value="${f.id}">${f.nom} (${f.code})</option>`).join('');
+      }
+    } catch(e) {}
+  }
+
+  function openModalFiliere(fjson) {
+    const f = fjson ? (typeof fjson === 'string' ? JSON.parse(fjson) : fjson) : null;
+    document.getElementById('modalContent').innerHTML = `
+      <div class="modal-header">
+        <h3 class="modal-title">${f ? 'Modifier la filière' : 'Nouvelle filière'}</h3>
+        <button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button>
+      </div>
+      <div id="modalAlert"></div>
+      <div class="form-group">
+        <label class="form-label">Code</label>
+        <input type="text" id="fCode" class="form-control" value="${f?.code||''}" ${f?'readonly':''} placeholder="Ex: INFO-L1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nom de la filière</label>
+        <input type="text" id="fNom" class="form-control" value="${f?.nom||''}" placeholder="Ex: Informatique">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Niveau</label>
+        <input type="text" id="fNiveau" class="form-control" value="${f?.niveau||''}" placeholder="Ex: Licence 1">
+      </div>
+      <button class="btn btn-primary btn-block btn-lg" style="margin-top:1rem" onclick="sauvegarderFiliere(${f?.id||'null'})">
+        ${f ? '💾 Mettre à jour' : '+ Créer la filière'}
+      </button>`;
+    document.getElementById('modalOverlay').style.display = 'flex';
+  }
+
+  async function sauvegarderFiliere(id) {
+    const body = {
+      code: document.getElementById('fCode').value.trim(),
+      nom: document.getElementById('fNom').value.trim(),
+      niveau: document.getElementById('fNiveau').value.trim()
+    };
+    if (!body.nom) return;
+    try {
+      if (id) await api.put(`/filieres/${id}`, body);
+      else await api.post('/filieres', body);
+      closeModal();
+      showToast(id ? 'Filière mise à jour !' : 'Filière créée !');
+      chargerFilieres();
+    } catch(e) {
+      document.getElementById('modalAlert').innerHTML = `<div class="alert alert-danger">${e.message}</div>`;
+    }
+  }
+
+  async function supprimerFiliere(id, nom) {
+    if (!confirm(`Supprimer la filière "${nom}" ?`)) return;
+    try {
+      await api.delete(`/filieres/${id}`);
+      showToast('Filière supprimée.'); chargerFilieres();
+    } catch(e) { showToast(e.message, 'error'); }
+  }
+
+  // ── Matières ─────────────────────────────────
+  async function chargerMatieres() {
+    const fId = document.getElementById('filtreFiliereM')?.value || '';
+    try {
+      const data = await api.get(`/matieres${fId?'?filiere_id='+fId:''}`);
+      document.getElementById('tblMatieres').innerHTML = data.data.map(m => `
+        <tr>
+          <td><code>${m.code}</code></td>
+          <td><strong>${m.libelle}</strong></td>
+          <td>${m.credits}</td>
+          <td style="font-weight:700;color:var(--accent)">${formatFCFA(m.frais)}</td>
+          <td>${m.filiere_nom||'—'}</td>
+          <td>${m.semestre}</td>
+          <td>${m.actif ? '<span class="badge badge-success">Actif</span>' : '<span class="badge badge-gray">Inactif</span>'}</td>
+          <td>
+            <button class="btn btn-ghost btn-sm" onclick="openModalMatiere(${JSON.stringify(JSON.stringify(m))})">✏️</button>
+            <button class="btn btn-ghost btn-sm" onclick="desactiverMatiere(${m.id},'${m.libelle}')">🗑️</button>
+          </td>
+        </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-muted)">Aucune matière</td></tr>';
+    } catch(e) { showToast(e.message, 'error'); }
+  }
+
+  function openModalMatiere(mjson) {
+    const m = mjson ? (typeof mjson === 'string' ? JSON.parse(mjson) : mjson) : null;
+    const filOpts = filieresList.map(f => `<option value="${f.id}" ${m?.filiere_id==f.id?'selected':''}>${f.nom} (${f.code})</option>`).join('');
+    document.getElementById('modalContent').innerHTML = `
+      <div class="modal-header">
+        <h3 class="modal-title">${m ? 'Modifier la matière' : 'Nouvelle matière'}</h3>
+        <button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button>
+      </div>
+      <div id="modalAlert"></div>
+      <div class="form-group">
+        <label class="form-label">Code</label>
+        <input type="text" id="mCode" class="form-control" value="${m?.code||''}" ${m?'readonly':''} placeholder="Ex: INF101">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Libellé</label>
+        <input type="text" id="mLib" class="form-control" value="${m?.libelle||''}" placeholder="Nom de la matière">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Crédits</label>
+          <input type="number" id="mCreds" class="form-control" value="${m?.credits||3}" min="1" max="8">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Frais (FCFA)</label>
+          <input type="number" id="mFrais" class="form-control" value="${m?.frais||5000}" min="0">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Filière</label>
+          <select id="mFiliere" class="form-control"><option value="">Aucune</option>${filOpts}</select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Semestre</label>
+          <select id="mSem" class="form-control">
+            ${['S1','S2','S3','S4','S5','S6'].map(s => `<option ${m?.semestre==s?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block btn-lg" style="margin-top:1rem" onclick="sauvegarderMatiere(${m?.id||'null'})">
+        ${m ? '💾 Mettre à jour' : '+ Créer la matière'}
+      </button>`;
+    document.getElementById('modalOverlay').style.display = 'flex';
+  }
+
+  async function sauvegarderMatiere(id) {
+    const body = {
+      code: document.getElementById('mCode').value.trim(),
+      libelle: document.getElementById('mLib').value.trim(),
+      credits: parseInt(document.getElementById('mCreds').value),
+      frais: parseFloat(document.getElementById('mFrais').value),
+      filiere_id: document.getElementById('mFiliere').value || null,
+      semestre: document.getElementById('mSem').value
+    };
+    if (!body.libelle || !body.frais) return;
+    try {
+      if (id) await api.put(`/matieres/${id}`, body);
+      else await api.post('/matieres', body);
+      closeModal(); showToast(id ? 'Matière mise à jour !' : 'Matière créée !');
+      chargerMatieres();
+    } catch(e) {
+      document.getElementById('modalAlert').innerHTML = `<div class="alert alert-danger">${e.message}</div>`;
+    }
+  }
+
+  async function desactiverMatiere(id, lib) {
+    if (!confirm(`Désactiver la matière "${lib}" ?`)) return;
+    try {
+      await api.delete(`/matieres/${id}`);
+      showToast('Matière désactivée.'); chargerMatieres();
+    } catch(e) { showToast(e.message, 'error'); }
+  }
+
+  // ── Étudiants ────────────────────────────────
+  async function chargerEtudiants() {
+    const search = document.getElementById('searchEtud')?.value || '';
+    try {
+      const data = await api.get(`/etudiants?search=${encodeURIComponent(search)}`);
+      document.getElementById('tblEtudiants').innerHTML = data.data.map(e => `
+        <tr>
+          <td><code>${e.matricule}</code></td>
+          <td><strong>${e.nom}</strong></td><td>${e.prenom}</td>
+          <td>${e.filiere_nom||'—'}</td><td>${e.niveau}</td><td>${e.telephone}</td>
+          <td><button class="btn btn-ghost btn-sm" onclick="openModalEtudiant(${JSON.stringify(JSON.stringify(e))})">✏️</button></td>
+        </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">Aucun résultat</td></tr>';
+    } catch(e) { showToast(e.message, 'error'); }
+  }
+
+  function openModalEtudiant(ejson) {
+    const e = ejson ? (typeof ejson === 'string' ? JSON.parse(ejson) : ejson) : null;
+    const filOpts = filieresList.map(f => `<option value="${f.id}" ${e?.filiere_id==f.id?'selected':''}>${f.nom}</option>`).join('');
+    document.getElementById('modalContent').innerHTML = `
+      <div class="modal-header">
+        <h3 class="modal-title">${e ? 'Modifier l\'étudiant' : 'Nouvel étudiant'}</h3>
+        <button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button>
+      </div>
+      <div id="modalAlert"></div>
+      ${!e ? `<div class="form-group"><label class="form-label">Matricule</label><input type="text" id="eMatr" class="form-control" placeholder="Ex: 23G0050"></div>` : ''}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">Nom</label><input type="text" id="eNom" class="form-control" value="${e?.nom||''}"></div>
+        <div class="form-group"><label class="form-label">Prénom</label><input type="text" id="ePrenom" class="form-control" value="${e?.prenom||''}"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Téléphone</label><input type="tel" id="eTel" class="form-control" value="${e?.telephone||''}"></div>
+      <div class="form-group"><label class="form-label">Email</label><input type="email" id="eEmail" class="form-control" value="${e?.email||''}"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Filière</label>
+          <select id="eFiliere" class="form-control"><option value="">—</option>${filOpts}</select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Niveau</label>
+          <select id="eNiv" class="form-control">${['L1','L2','L3','M1','M2'].map(n=>`<option ${e?.niveau==n?'selected':''}>${n}</option>`).join('')}</select>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block btn-lg" style="margin-top:1rem" onclick="sauvegarderEtudiant(${e?.id||'null'})">
+        ${e ? '💾 Mettre à jour' : '+ Créer l\'étudiant'}
+      </button>`;
+    if (!filieresList.length) chargerFilieresList();
+    document.getElementById('modalOverlay').style.display = 'flex';
+  }
+
+  async function sauvegarderEtudiant(id) {
+    const body = {
+      nom: document.getElementById('eNom').value.trim(),
+      prenom: document.getElementById('ePrenom').value.trim(),
+      telephone: document.getElementById('eTel').value.trim(),
+      email: document.getElementById('eEmail').value.trim() || null,
+      filiere_id: document.getElementById('eFiliere').value || null,
+      niveau: document.getElementById('eNiv').value,
+      ...(!id && { matricule: document.getElementById('eMatr').value.trim() })
+    };
+    try {
+      if (id) await api.put(`/etudiants/${id}`, body);
+      else await api.post('/etudiants', body);
+      closeModal(); showToast(id ? 'Étudiant mis à jour !' : 'Étudiant créé !');
+      chargerEtudiants();
+    } catch(e) {
+      document.getElementById('modalAlert').innerHTML = `<div class="alert alert-danger">${e.message}</div>`;
+    }
+  }
+
+  // ── Paiements admin ───────────────────────────
+  async function chargerPaiements() {
+    try {
+      const data = await api.get('/paiements?limit=50');
+      document.getElementById('tblPaiements').innerHTML = data.data.map(p => `
+        <tr>
+          <td style="font-size:.8rem">${formatDate(p.created_at)}</td>
+          <td><code style="font-size:.75rem">${p.reference}</code></td>
+          <td>${p.etudiant_nom}<br><small style="color:var(--text-muted)">${p.matricule}</small></td>
+          <td><strong style="color:var(--accent)">${formatFCFA(p.montant_total)}</strong></td>
+          <td>${modePaiement(p.mode_paiement)}</td>
+          <td>${badgeStatut(p.statut)}</td>
+          <td>${p.numero_recu ? `<a href="/api/recus/${p.numero_recu}/pdf" target="_blank" class="btn btn-ghost btn-sm">📄 PDF</a>` : '—'}</td>
+        </tr>`).join('');
+    } catch(e) { showToast(e.message, 'error'); }
+  }
+
+  // ── Modal helpers ─────────────────────────────
+  function closeModal(event) {
+    if (!event || event.target.id === 'modalOverlay') {
+      document.getElementById('modalOverlay').style.display = 'none';
+    }
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,394 @@
+/* ───────── VARIABLES DESIGN SYSTEM ───────── */
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --accent: #10b981;
+  --danger: #ef4444;
+
+  --orange-money: #ff7900;
+  --mtn: #ffcc00;
+
+  --bg: #f8fafc;
+  --card-bg: #ffffff;
+  --text: #1e293b;
+  --text-muted: #64748b;
+
+  --border: #e2e8f0;
+
+  --radius: 14px;
+  --radius-sm: 10px;
+
+  --shadow: 0 10px 25px rgba(0,0,0,0.05);
+  --shadow-hover: 0 15px 35px rgba(0,0,0,0.08);
+}
+
+/* ───────── RESET ───────── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Inter", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ───────── TOPBAR ───────── */
+.topbar {
+  height: 64px;
+  background: white;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+}
+
+.topbar-brand {
+  font-weight: 800;
+  font-size: 1.2rem;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.topbar .dot {
+  color: var(--accent);
+}
+
+.topbar-nav a {
+  margin: 0 10px;
+  text-decoration: none;
+  color: var(--text-muted);
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.topbar-nav a:hover,
+.topbar-nav a.active {
+  color: var(--primary);
+}
+
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ───────── LAYOUT ───────── */
+.main-layout {
+  display: flex;
+}
+
+/* ───────── SIDEBAR ───────── */
+.sidebar {
+  width: 240px;
+  background: white;
+  border-right: 1px solid var(--border);
+  padding: 1rem;
+  min-height: calc(100vh - 64px);
+}
+
+.sidebar-section {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.sidebar-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text);
+  transition: 0.2s;
+}
+
+.sidebar-item:hover {
+  background: #f1f5f9;
+}
+
+.sidebar-item.active {
+  background: var(--primary);
+  color: white;
+}
+
+/* ───────── PAGE CONTENT ───────── */
+.page-content {
+  flex: 1;
+  padding: 1.5rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.page-subtitle {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* ───────── CARD ───────── */
+.card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1rem;
+  transition: 0.2s;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+/* ───────── FORM ───────── */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.form-control {
+  width: 100%;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  outline: none;
+  transition: 0.2s;
+}
+
+.form-control:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+
+/* ───────── BUTTONS ───────── */
+.btn {
+  border: none;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+}
+
+.btn-accent {
+  background: var(--accent);
+  color: white;
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+}
+
+.btn-sm {
+  font-size: 0.75rem;
+}
+
+.btn-lg {
+  padding: 12px;
+  font-size: 1rem;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+/* ───────── SEARCH RESULT ───────── */
+.search-result:hover {
+  transform: translateX(4px);
+}
+
+/* ───────── MATIERES ───────── */
+.matiere-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.matiere-item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.matiere-item:hover {
+  background: #f1f5f9;
+}
+
+.matiere-item.selected {
+  border-color: var(--primary);
+  background: #eef2ff;
+}
+
+.matiere-name {
+  font-weight: 600;
+}
+
+.matiere-frais {
+  font-size: 0.8rem;
+  color: var(--accent);
+}
+
+/* ───────── TABLE ───────── */
+.table-wrapper {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+th {
+  background: #f8fafc;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* ───────── STATS ───────── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.stat-card {
+  padding: 1rem;
+  border-radius: var(--radius);
+  background: white;
+  box-shadow: var(--shadow);
+}
+
+.stat-card.accent {
+  background: var(--accent);
+  color: white;
+}
+
+.stat-card.success {
+  background: #22c55e;
+  color: white;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.stat-sub {
+  font-size: 0.8rem;
+}
+
+/* ───────── ALERT ───────── */
+.alert {
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 1rem;
+}
+
+.alert-danger {
+  background: #fee2e2;
+  color: var(--danger);
+}
+
+/* ───────── RECU ───────── */
+.recu-preview {
+  background: #fff;
+  padding: 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border);
+}
+
+.recu-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+}
+
+/* ───────── ANIMATIONS ───────── */
+.card,
+.sidebar-item,
+.btn,
+.matiere-item {
+  transition: all 0.2s ease;
+}
+
+/* ───────── RESPONSIVE ───────── */
+@media (max-width: 900px) {
+  .main-layout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    display: flex;
+    overflow-x: auto;
+  }
+
+  .agent-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
