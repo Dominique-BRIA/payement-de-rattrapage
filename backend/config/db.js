@@ -1,41 +1,29 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-// Railway fournit MYSQL_URL automatiquement — on l'utilise en priorité
 let pool;
 
 if (process.env.MYSQL_URL) {
-  // Mode Railway — utilise l'URL complète
-  pool = mysql.createPool({
-    uri: process.env.MYSQL_URL,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-    charset: 'utf8mb4'
-  });
+  pool = mysql.createPool(process.env.MYSQL_URL);
 } else {
-  // Mode local
   pool = mysql.createPool({
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '3306'),
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'rattrapage_db',
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-    charset: 'utf8mb4'
+    database: process.env.DB_NAME || 'rattrapage_db'
   });
 }
 
-// Test de connexion au démarrage
-pool.getConnection()
-  .then(conn => {
-    console.log('✅ Connexion MySQL établie avec succès');
+// test connexion
+(async () => {
+  try {
+    const conn = await pool.getConnection();
+    console.log('✅ Connexion MySQL OK');
     conn.release();
-  })
-  .catch(err => {
-    console.error('❌ Erreur connexion MySQL :', err.message);
-  });
+  } catch (err) {
+    console.error('❌ Erreur :', err);
+  }
+})();
 
 module.exports = pool;
