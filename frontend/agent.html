@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PayRattrapage — Espace Agent</title>
+  <link rel="stylesheet" href="css/styleAgent.css">
+  <style>
+    .agent-grid { display: grid; grid-template-columns: 400px 1fr; gap: 1.5rem; align-items: start; }
+    .search-result {
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      cursor: pointer;
+      border: 1.5px solid transparent;
+      transition: all 0.2s;
+    }
+    .search-result:hover, .search-result.selected { border-color: var(--primary); background: #EEF2FF; }
+    .etudiant-card {
+      background: linear-gradient(135deg, var(--primary), #1d3a8a);
+      color: white;
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .print-area { display: none; }
+    @media print {
+      body > *:not(.print-area) { display: none !important; }
+      .print-area { display: block !important; }
+    }
+    .recu-print {
+      font-family: 'Courier New', monospace;
+      max-width: 380px;
+      margin: 0 auto;
+      padding: 20px;
+      border: 2px solid #000;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<nav class="topbar">
+  <div class="topbar-brand">
+    <span class="dot">●</span>
+    <span>PayRattrapage</span>
+  </div>
+  <div class="topbar-nav">
+    <a href="agent.html" class="active">💵 Paiement Cash</a>
+    <a href="#" onclick="showSection('liste')">📋 Liste des paiements</a>
+  </div>
+  <div class="topbar-user">
+    <div class="avatar" id="userAvatar">?</div>
+    <span id="userName"></span>
+    <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">Déconnexion</button>
+  </div>
+</nav>
+
+<div class="main-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-section">Menu Agent</div>
+    <a href="#" class="sidebar-item active" onclick="showSection('paiement')"><span class="icon">💵</span> Encaisser</a>
+    <a href="#" class="sidebar-item" onclick="showSection('liste')"><span class="icon">📋</span> Paiements</a>
+    <a href="#" class="sidebar-item" onclick="showSection('stats')"><span class="icon">📊</span> Statistiques</a>
+  </aside>
+
+  <div class="page-content">
+
+    <!-- ══════ SECTION : Paiement Cash ══════ -->
+    <div id="sectionPaiement">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Encaissement Cash</h1>
+          <p class="page-subtitle">Enregistrer un paiement en espèces et générer le reçu</p>
+        </div>
+      </div>
+
+      <div id="alertAgent"></div>
+
+      <div class="agent-grid">
+
+        <!-- Colonne gauche : recherche + matières -->
+        <div>
+          <!-- Recherche étudiant -->
+          <div class="card" style="margin-bottom:1rem">
+            <div class="card-header">
+              <span class="card-title">🔍 Rechercher un étudiant</span>
+            </div>
+            <div class="form-group" style="margin-bottom:.5rem">
+              <input type="text" id="searchEtudiant" class="form-control"
+                placeholder="Matricule, nom ou prénom..."
+                oninput="rechercherEtudiant(this.value)">
+            </div>
+            <div id="searchResults"></div>
+          </div>
+
+          <!-- Étudiant sélectionné -->
+          <div id="etudiantSelectionne" style="display:none">
+            <div class="etudiant-card">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                <div>
+                  <div style="font-size:.75rem;opacity:.7;text-transform:uppercase;letter-spacing:.5px">Étudiant sélectionné</div>
+                  <div style="font-size:1.2rem;font-weight:800;margin:4px 0" id="etudNomComplet"></div>
+                  <div style="font-size:.85rem;opacity:.8" id="etudInfo"></div>
+                </div>
+                <button class="btn btn-ghost btn-sm" style="color:white;background:rgba(255,255,255,.15)" onclick="deselectionnerEtudiant()">✕</button>
+              </div>
+            </div>
+
+            <!-- Sélection matières -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">📚 Matières à rattraper</span>
+                <span style="font-size:.8rem;color:var(--accent);font-weight:700" id="totalCash">0 FCFA</span>
+              </div>
+              <div id="matieresCashContainer">Chargement...</div>
+              <div class="form-group" style="margin-top:1rem">
+                <label class="form-label">Remarque (optionnel)</label>
+                <input type="text" id="remarqueCash" class="form-control" placeholder="Ex: paiement fractionné...">
+              </div>
+              <button class="btn btn-accent btn-lg btn-block" style="margin-top:1rem" onclick="enregistrerPaiementCash()" id="btnCash" disabled>
+                💵 Enregistrer & Générer le reçu
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Colonne droite : aperçu reçu -->
+        <div>
+          <div class="card" id="apercuRecuCard" style="display:none">
+            <div class="card-header">
+              <span class="card-title">🖨️ Aperçu du reçu</span>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-primary btn-sm" onclick="telechargerRecuCash()">📄 PDF</button>
+                <button class="btn btn-ghost btn-sm" onclick="imprimerRecu()">🖨️ Imprimer</button>
+              </div>
+            </div>
+            <div class="recu-preview" id="apercuRecu"></div>
+          </div>
+
+          <!-- Derniers paiements du jour -->
+          <div class="card" style="margin-top:1rem">
+            <div class="card-header">
+              <span class="card-title">📅 Paiements du jour</span>
+              <button class="btn btn-ghost btn-sm" onclick="chargerPaiementsJour()">↻ Actualiser</button>
+            </div>
+            <div id="paiementsJour">
+              <div style="text-align:center;padding:1.5rem;color:var(--text-muted)">Chargement...</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════ SECTION : Liste des paiements ══════ -->
+    <div id="sectionListe" style="display:none">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Tous les paiements</h1>
+          <p class="page-subtitle">Historique complet des paiements enregistrés</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <select class="form-control" id="filtreMode" onchange="chargerListe()" style="width:auto">
+            <option value="">Tous les modes</option>
+            <option value="cash">Cash</option>
+            <option value="orange_money">Orange Money</option>
+            <option value="mtn_money">MTN MoMo</option>
+          </select>
+          <select class="form-control" id="filtreStatut" onchange="chargerListe()" style="width:auto">
+            <option value="">Tous statuts</option>
+            <option value="valide">Validés</option>
+            <option value="en_attente">En attente</option>
+          </select>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Étudiant</th><th>Matricule</th><th>Montant</th><th>Mode</th><th>Statut</th><th>Agent</th><th>Reçu</th></tr>
+            </thead>
+            <tbody id="listeBody">
+              <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="listePagination" style="display:flex;justify-content:flex-end;gap:8px;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)"></div>
+      </div>
+    </div>
+
+    <!-- ══════ SECTION : Statistiques ══════ -->
+    <div id="sectionStats" style="display:none">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Statistiques</h1>
+          <p class="page-subtitle">Tableau de bord des encaissements</p>
+        </div>
+      </div>
+      <div class="stats-grid" id="statsGrid">
+        <div style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement...</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Zone impression reçu -->
+<div class="print-area" id="printArea"></div>
+
+<script src="js/api.js"></script>
+<script>
+  if (!Auth.requireAuth(['agent', 'admin'])) {}
+
+  let etudiantActif = null;
+  let matieresCashSelectionnees = [];
+  let derniereReference = null;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    initTopbarUser();
+    chargerPaiementsJour();
+  });
+
+  // ── Navigation sections ──────────────────────
+  function showSection(section) {
+    ['sectionPaiement','sectionListe','sectionStats'].forEach(s =>
+      document.getElementById(s).style.display = 'none'
+    );
+    document.querySelectorAll('.sidebar-item').forEach(a => a.classList.remove('active'));
+
+    if (section === 'paiement') {
+      document.getElementById('sectionPaiement').style.display = '';
+    } else if (section === 'liste') {
+      document.getElementById('sectionListe').style.display = '';
+      chargerListe();
+    } else if (section === 'stats') {
+      document.getElementById('sectionStats').style.display = '';
+      chargerStats();
+    }
+  }
+
+  // ── Recherche étudiant ───────────────────────
+  let searchTimer;
+  async function rechercherEtudiant(val) {
+    clearTimeout(searchTimer);
+    if (val.length < 2) { document.getElementById('searchResults').innerHTML = ''; return; }
+    searchTimer = setTimeout(async () => {
+      try {
+        const data = await api.get(`/etudiants?search=${encodeURIComponent(val)}`);
+        const html = data.data.slice(0, 5).map(e => `
+          <div class="search-result" onclick="selectionnerEtudiant(${JSON.stringify(JSON.stringify(e))})">
+            <div>
+              <div style="font-weight:700">${e.prenom} ${e.nom}</div>
+              <div style="font-size:.78rem;color:var(--text-muted)">${e.matricule} · ${e.filiere_nom || 'N/A'}</div>
+            </div>
+            <span style="font-size:.75rem;color:var(--primary)">Sélectionner →</span>
+          </div>`).join('');
+        document.getElementById('searchResults').innerHTML = html || '<div style="padding:8px;color:var(--text-muted);font-size:.85rem">Aucun résultat</div>';
+      } catch(e) {}
+    }, 350);
+  }
+
+  async function selectionnerEtudiant(etudiantJson) {
+    const e = typeof etudiantJson === 'string' ? JSON.parse(etudiantJson) : etudiantJson;
+    etudiantActif = e;
+    matieresCashSelectionnees = [];
+    document.getElementById('searchResults').innerHTML = '';
+    document.getElementById('searchEtudiant').value = '';
+    document.getElementById('etudNomComplet').textContent = `${e.prenom} ${e.nom}`;
+    document.getElementById('etudInfo').textContent = `${e.matricule} · ${e.filiere_nom || ''} · ${e.telephone}`;
+    document.getElementById('etudiantSelectionne').style.display = '';
+    await chargerMatieresCash(e.filiere_id);
+  }
+
+  function deselectionnerEtudiant() {
+    etudiantActif = null;
+    matieresCashSelectionnees = [];
+    document.getElementById('etudiantSelectionne').style.display = 'none';
+    document.getElementById('apercuRecuCard').style.display = 'none';
+  }
+
+  async function chargerMatieresCash(filiereId) {
+    try {
+      const url = filiereId ? `/matieres?filiere_id=${filiereId}` : '/matieres';
+      const data = await api.get(url);
+      const html = `<div class="matiere-grid">${data.data.map(m => `
+        <div class="matiere-item" id="cmi-${m.id}" onclick="toggleMatiereC(${m.id},${m.frais},'${m.libelle.replace(/'/g,"\\'")}')">
+          <input type="checkbox" id="ccb-${m.id}">
+          <div class="matiere-info">
+            <div class="matiere-name">${m.libelle}</div>
+            <div class="matiere-frais">${formatFCFA(m.frais)}</div>
+          </div>
+        </div>`).join('')}</div>`;
+      document.getElementById('matieresCashContainer').innerHTML = html;
+    } catch(e) {
+      document.getElementById('matieresCashContainer').innerHTML = '<div class="alert alert-danger">Erreur chargement</div>';
+    }
+  }
+
+  function toggleMatiereC(id, frais, libelle) {
+    const idx = matieresCashSelectionnees.findIndex(m => m.id === id);
+    if (idx === -1) {
+      matieresCashSelectionnees.push({ id, frais: parseFloat(frais), libelle });
+      document.getElementById(`cmi-${id}`)?.classList.add('selected');
+      document.getElementById(`ccb-${id}`).checked = true;
+    } else {
+      matieresCashSelectionnees.splice(idx, 1);
+      document.getElementById(`cmi-${id}`)?.classList.remove('selected');
+      document.getElementById(`ccb-${id}`).checked = false;
+    }
+    const total = matieresCashSelectionnees.reduce((s, m) => s + m.frais, 0);
+    document.getElementById('totalCash').textContent = formatFCFA(total);
+    document.getElementById('btnCash').disabled = matieresCashSelectionnees.length === 0;
+  }
+
+  // ── Enregistrer paiement cash ────────────────
+  async function enregistrerPaiementCash() {
+    if (!etudiantActif || !matieresCashSelectionnees.length) return;
+    showLoading('Enregistrement du paiement...');
+    try {
+      const data = await api.post('/paiements/cash', {
+        etudiant_id: etudiantActif.id,
+        matieres_ids: matieresCashSelectionnees.map(m => m.id),
+        remarque: document.getElementById('remarqueCash').value
+      });
+      hideLoading();
+      derniereReference = data.data.numero_recu;
+      showToast('Paiement enregistré avec succès !');
+      afficherApercuRecu(data.data);
+      chargerPaiementsJour();
+    } catch (err) {
+      hideLoading();
+      document.getElementById('alertAgent').innerHTML = `<div class="alert alert-danger">❌ ${err.message}</div>`;
+    }
+  }
+
+  function afficherApercuRecu(data) {
+    const agent = Auth.getUser();
+    const now = new Date().toLocaleDateString('fr-FR', {day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    const matieres = data.matieres || [];
+
+    const html = `
+      <div style="font-weight:bold;text-align:center;font-size:1rem;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:8px">
+        UNIVERSITÉ — REÇU DE PAIEMENT
+      </div>
+      <div style="text-align:center;font-size:.85rem;margin-bottom:12px">
+        N° <strong>${data.numero_recu}</strong><br>${now}
+      </div>
+      <div style="font-size:.82rem">
+        <div class="recu-row"><span>Étudiant :</span><strong>${data.etudiant?.prenom} ${data.etudiant?.nom}</strong></div>
+        <div class="recu-row"><span>Matricule :</span><span>${data.etudiant?.matricule}</span></div>
+        <div class="recu-row"><span>Filière :</span><span>${data.etudiant?.filiere || ''}</span></div>
+        <hr style="margin:8px 0;border:1px dashed #ccc">
+        ${matieres.map(m => `<div class="recu-row"><span>${m.libelle}</span><span>${formatFCFA(m.frais)}</span></div>`).join('')}
+        <hr style="margin:8px 0;border:2px solid #000">
+        <div class="recu-row" style="font-size:1rem;font-weight:bold">
+          <span>TOTAL</span><span>${formatFCFA(data.montant_total)}</span>
+        </div>
+        <hr style="margin:8px 0;border:1px dashed #ccc">
+        <div class="recu-row"><span>Mode :</span><span>💵 Espèces (Cash)</span></div>
+        <div class="recu-row"><span>Référence :</span><span style="font-size:.72rem">${data.reference}</span></div>
+        <div class="recu-row"><span>Agent :</span><span>${agent?.prenom} ${agent?.nom}</span></div>
+      </div>
+      <div style="text-align:center;font-size:.72rem;margin-top:12px;color:#666">
+        Merci de conserver ce reçu précieusement
+      </div>`;
+
+    document.getElementById('apercuRecu').innerHTML = html;
+    document.getElementById('apercuRecuCard').style.display = '';
+  }
+
+  function telechargerRecuCash() {
+  if (derniereReference) ouvrirPDF(derniereReference);
+}
+
+  function imprimerRecu() {
+    document.getElementById('printArea').innerHTML = `<div class="recu-print">${document.getElementById('apercuRecu').innerHTML}</div>`;
+    window.print();
+  }
+
+  // ── Paiements du jour ─────────────────────────
+  async function chargerPaiementsJour() {
+    try {
+      const data = await api.get('/paiements?limit=8');
+      const rows = data.data;
+      if (!rows.length) {
+        document.getElementById('paiementsJour').innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--text-muted);font-size:.85rem">Aucun paiement aujourd\'hui</div>';
+        return;
+      }
+      document.getElementById('paiementsJour').innerHTML = rows.map(p => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:.82rem">
+          <div>
+            <div style="font-weight:600">${p.etudiant_nom}</div>
+            <div style="color:var(--text-muted)">${p.matricule} · ${modePaiement(p.mode_paiement)}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-weight:700;color:var(--accent)">${formatFCFA(p.montant_total)}</div>
+            ${badgeStatut(p.statut)}
+          </div>
+        </div>`).join('');
+    } catch(e) {}
+  }
+
+  // ── Liste complète ────────────────────────────
+  let currentPage = 1;
+  async function chargerListe(page = 1) {
+    currentPage = page;
+    const mode = document.getElementById('filtreMode')?.value || '';
+    const statut = document.getElementById('filtreStatut')?.value || '';
+    let url = `/paiements?page=${page}&limit=15`;
+    if (mode) url += `&mode=${mode}`;
+    if (statut) url += `&statut=${statut}`;
+
+    try {
+      const data = await api.get(url);
+      document.getElementById('listeBody').innerHTML = data.data.map(p => `
+        <tr>
+          <td style="font-size:.8rem">${formatDate(p.created_at)}</td>
+          <td><strong>${p.etudiant_nom}</strong></td>
+          <td><code style="font-size:.75rem">${p.matricule}</code></td>
+          <td><strong style="color:var(--accent)">${formatFCFA(p.montant_total)}</strong></td>
+          <td>${modePaiement(p.mode_paiement)}</td>
+          <td>${badgeStatut(p.statut)}</td>
+          <td style="font-size:.8rem">${p.agent_nom || '—'}</td>
+          <td>${p.numero_recu ? `<a href="#" onclick="ouvrirPDF('${p.numero_recu}')" class="btn btn-ghost btn-sm">📄 PDF</a>` : '—'}</td>
+        </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-muted)">Aucun résultat</td></tr>';
+
+      // Pagination
+      const pages = Math.ceil(data.total / 15);
+      document.getElementById('listePagination').innerHTML = Array.from({length:pages}, (_,i) =>
+        `<button class="btn ${currentPage===i+1?'btn-primary':'btn-ghost'} btn-sm" onclick="chargerListe(${i+1})">${i+1}</button>`
+      ).join('');
+    } catch(e) {
+      document.getElementById('listeBody').innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--danger)">${e.message}</td></tr>`;
+    }
+  }
+
+  // ── Stats ─────────────────────────────────────
+  async function chargerStats() {
+    try {
+      const data = await api.get('/paiements/stats');
+      const t = data.data.totaux;
+      document.getElementById('statsGrid').innerHTML = `
+        <div class="stat-card">
+          <div class="stat-label">Total encaissé</div>
+          <div class="stat-value">${new Intl.NumberFormat('fr-FR').format(t.montant_total_valide || 0)}</div>
+          <div class="stat-sub">FCFA collectés</div>
+        </div>
+        <div class="stat-card accent">
+          <div class="stat-label">Cash</div>
+          <div class="stat-value">${new Intl.NumberFormat('fr-FR').format(t.montant_cash || 0)}</div>
+          <div class="stat-sub">FCFA en espèces</div>
+        </div>
+        <div class="stat-card" style="--primary:var(--orange-money)">
+          <div class="stat-label">Orange Money</div>
+          <div class="stat-value">${new Intl.NumberFormat('fr-FR').format(t.montant_orange || 0)}</div>
+          <div class="stat-sub">FCFA Orange</div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-label">MTN MoMo</div>
+          <div class="stat-value">${new Intl.NumberFormat('fr-FR').format(t.montant_mtn || 0)}</div>
+          <div class="stat-sub">FCFA MTN</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Étudiants payants</div>
+          <div class="stat-value">${t.nb_etudiants || 0}</div>
+          <div class="stat-sub">étudiants uniques</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total paiements</div>
+          <div class="stat-value">${t.total_paiements || 0}</div>
+          <div class="stat-sub">transactions validées</div>
+        </div>`;
+    } catch(e) {
+      document.getElementById('statsGrid').innerHTML = `<div class="alert alert-danger">${e.message}</div>`;
+    }
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PayRattrapage — Connexion</title>
+  <link rel="stylesheet" href="css/styleIndex.css">
+  <style>
+    .brand-logo { font-size: 2.8rem; margin-bottom: 0.5rem; }
+    .login-form-panel h2 { font-family: 'Fraunces', serif; font-size: 1.6rem; font-weight: 700; color: var(--primary); margin-bottom: 0.25rem; }
+    .login-form-panel p.sub { color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem; }
+    .form-panel { display: none; }
+    .form-panel.active { display: block; }
+    .forgot-link { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; }
+    .forgot-link:hover { color: var(--primary); }
+  </style>
+</head>
+<body>
+<div class="login-page">
+
+  <!-- ── Hero ── -->
+  <div class="login-hero">
+    <div class="login-hero-content">
+      <div class="brand-logo">🎓</div>
+      <h1>Paiement des <span>Frais de</span> Rattrapage</h1>
+      <p>Plateforme officielle de gestion des paiements de frais de rattrapage. Simple, sécurisé et rapide.</p>
+      <div class="hero-features">
+        <div class="hero-feature">
+          <div class="hero-feature-icon">🟠</div>
+          <span>Paiement Orange Money Cameroun</span>
+        </div>
+        <div class="hero-feature">
+          <div class="hero-feature-icon">🟡</div>
+          <span>Paiement MTN Mobile Money</span>
+        </div>
+        <div class="hero-feature">
+          <div class="hero-feature-icon">💵</div>
+          <span>Paiement en espèces avec reçu immédiat</span>
+        </div>
+        <div class="hero-feature">
+          <div class="hero-feature-icon">📄</div>
+          <span>Reçu PDF téléchargeable instantanément</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Formulaire ── -->
+  <div class="login-form-panel">
+    <h2>Bienvenue 👋</h2>
+    <p class="sub">Connectez-vous pour accéder à votre espace</p>
+
+    <!-- Tabs -->
+    <div class="login-tabs" role="tablist">
+      <button class="login-tab active" onclick="switchTab('etudiant')" id="tab-etudiant">🎓 Étudiant</button>
+      <button class="login-tab" onclick="switchTab('staff')" id="tab-staff">👔 Agent / Admin</button>
+    </div>
+
+    <!-- Alert zone -->
+    <div id="loginAlert" style="display:none"></div>
+
+    <!-- ─── Formulaire Étudiant ─── -->
+    <div class="form-panel active" id="panel-etudiant">
+      <div class="form-group">
+        <label class="form-label">Matricule</label>
+        <input type="text" id="etud-matricule" class="form-control" placeholder="Ex: 21G0001" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Numéro de téléphone</label>
+        <input type="tel" id="etud-telephone" class="form-control" placeholder="Ex: 699000001" autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="loginEtudiant()" id="btnLoginEtud">
+        Se connecter
+      </button>
+      <p style="text-align:center;margin-top:1rem;font-size:.8rem;color:var(--text-muted)">
+        Votre identifiant est votre matricule universitaire
+      </p>
+    </div>
+
+    <!-- ─── Formulaire Staff ─── -->
+    <div class="form-panel" id="panel-staff">
+      <div class="form-group">
+        <label class="form-label">Adresse Email</label>
+        <input type="email" id="staff-email" class="form-control" placeholder="agent@univ.cm" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe</label>
+        <input type="password" id="staff-password" class="form-control" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:1rem">
+        <a href="forgot-password.html" class="forgot-link">Mot de passe oublié ?</a>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="loginStaff()" id="btnLoginStaff">
+        Se connecter
+      </button>
+    </div>
+
+    <p style="text-align:center;margin-top:2rem;font-size:.72rem;color:var(--text-muted)">
+      © 2026 Système de Paiement des Frais de Rattrapage de IUAL
+      <br>Developpé par BOKOULA 
+    </p>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+  // Rediriger si déjà connecté
+  if (Auth.getToken()) {
+    const role = Auth.getRole();
+    if (role === 'etudiant') window.location.href = '/paiement.html';
+    else if (role === 'agent') window.location.href = '/agent.html';
+    else if (role === 'admin') window.location.href = '/admin.html';
+  }
+
+  function switchTab(tab) {
+    document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.form-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(`tab-${tab}`).classList.add('active');
+    document.getElementById(`panel-${tab}`).classList.add('active');
+    document.getElementById('loginAlert').style.display = 'none';
+  }
+
+  function showAlert(msg, type = 'danger') {
+    const el = document.getElementById('loginAlert');
+    el.style.display = 'block';
+    el.className = `alert alert-${type}`;
+    el.innerHTML = (type === 'danger' ? '⚠️ ' : '✅ ') + msg;
+  }
+
+  async function loginEtudiant() {
+    const matricule = document.getElementById('etud-matricule').value.trim();
+    const telephone = document.getElementById('etud-telephone').value.trim();
+    if (!matricule || !telephone) return showAlert('Veuillez remplir tous les champs.');
+
+    const btn = document.getElementById('btnLoginEtud');
+    btn.disabled = true; btn.textContent = 'Connexion...';
+
+    try {
+      const data = await api.post('/auth/etudiant', { matricule, telephone });
+      Auth.setToken(data.token);
+      Auth.setUser(data.etudiant);
+      Auth.setRole('etudiant');
+      showAlert('Connexion réussie ! Redirection...', 'success');
+      setTimeout(() => window.location.href = '/paiement.html', 800);
+    } catch (err) {
+      showAlert(err.message);
+      btn.disabled = false; btn.textContent = 'Se connecter';
+    }
+  }
+
+  async function loginStaff() {
+    const email = document.getElementById('staff-email').value.trim();
+    const password = document.getElementById('staff-password').value;
+    if (!email || !password) return showAlert('Veuillez remplir tous les champs.');
+
+    const btn = document.getElementById('btnLoginStaff');
+    btn.disabled = true; btn.textContent = 'Connexion...';
+
+    try {
+      const data = await api.post('/auth/staff', { email, password });
+      Auth.setToken(data.token);
+      Auth.setUser(data.user);
+      Auth.setRole(data.user.role);
+      showAlert('Connexion réussie ! Redirection...', 'success');
+      setTimeout(() => {
+        window.location.href = data.user.role === 'admin' ? '/admin.html' : '/agent.html';
+      }, 800);
+    } catch (err) {
+      showAlert(err.message);
+      btn.disabled = false; btn.textContent = 'Se connecter';
+    }
+  }
+
+  // Enter key support
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const activePanel = document.querySelector('.form-panel.active').id;
+      if (activePanel === 'panel-etudiant') loginEtudiant();
+      else loginStaff();
+    }
+  });
+</script>
+</body>
+</html>
