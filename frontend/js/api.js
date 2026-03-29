@@ -2,7 +2,7 @@
 // api.js — Utilitaires API & Auth
 // =============================================
 
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = window.location.origin + '/api';
 
 // ── Stockage Token ──────────────────────────
 const Auth = {
